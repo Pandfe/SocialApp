@@ -14,7 +14,7 @@ import { promptAction, router } from '@kit.ArkUI'
   .fontSize(18)
   .borderRadius(12)
   .placeholderColor('#7A8A99')
-  .backgroundColor(Color.Red)
+  .backgroundColor(Color.White)
 }
 
 // 为Line组件扩展样式
@@ -83,13 +83,13 @@ struct LoginPage {
           this.timeOutId = setTimeout(() => {
             this.isShowProgress = false
             this.timeOutId = -1
-            // 登录成功提示
-            promptAction.showToast({
-              message: '登录成功！欢迎您' + this.account
-            })
-            // 跳转到主页
+
+            // 跳转到主页，并传递账号信息
             router.replaceUrl({
-              url: 'pages/Index'
+              url: 'pages/Index',
+              params: {
+                account: this.account
+              }
             })
           }, 3000)
         }
@@ -158,6 +158,7 @@ struct LoginPage {
           .type(InputType.PhoneNumber)
           .maxLength(11)
           .enterKeyType(EnterKeyType.Next)
+          .inputStyle()
           .onChange((value: string) => {
             this.account = value
           })
@@ -295,5 +296,4 @@ struct LoginPage {
     })
     .backgroundColor("#F1F3F5")
   }
-
 }
