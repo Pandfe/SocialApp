@@ -37,39 +37,63 @@ struct RegisterPage {
   @State isShowProgress: boolean = false
   // 定时器ID
   private timeOutId: number = -1
+  // 防止重复点击
+  @State isRegistering: boolean = false
+  // Toast 消息
+  @State toastMessage: string = ''
+  @State showToast: boolean = false
+  // 注册成功标志
+  @State registerSuccess: boolean = false
+
+  // 显示Toast方法
+  private showToastMessage(message: string): void {
+    this.toastMessage = message
+    this.showToast = true
+    // 2秒后自动隐藏
+    setTimeout(() => {
+      this.showToast = false
+    }, 2000)
+  }
 
   // 注册方法
   register(): void {
+    if (this.isRegistering) return;
+
     if (this.account === '' || this.password === '' || this.confirmPassword === '') {
       // 输入为空时提示
-      promptAction.showToast({
-        message: '输入不能为空'
-      })
+      this.showToastMessage('输入不能为空')
     } else if (this.password !== this.confirmPassword) {
       // 密码不一致提示
-      promptAction.showToast({
-        message: '两次输入的密码不一致'
-      })
+      this.showToastMessage('两次输入的密码不一致')
+    } else if (this.password.length < 6) {
+      // 密码长度验证
+      this.showToastMessage('密码长度至少6位')
     } else {
       // 显示加载进度
       this.isShowProgress = true
+      this.isRegistering = true
+
       if (this.timeOutId == -1) {
         // 设置定时器，模拟注册过程
         this.timeOutId = setTimeout(() => {
           this.isShowProgress = false
+          this.isRegistering = false
           this.timeOutId = -1
-          // 注册成功提示
-          promptAction.showToast({
-            message: '注册成功！'
-          })
-          // 跳转回登录页面，并传递注册的账号密码
-          router.replaceUrl({
-            url: 'pages/LoginPage',
-            params: {
-              account: this.account,
-              password: this.password
-            }
-          })
+
+          // 设置注册成功标志
+          this.registerSuccess = true
+
+          // 延迟跳转，让用户看到成功提示
+          setTimeout(() => {
+            // 跳转回登录页面，并传递注册的账号密码
+            router.replaceUrl({
+              url: 'pages/LoginPage',
+              params: {
+                account: this.account,
+                password: this.password
+              }
+            })
+          }, 1000)
         }, 2000)
       }
     }
@@ -79,6 +103,8 @@ struct RegisterPage {
   aboutToDisappear(): void {
     clearTimeout(this.timeOutId)
     this.timeOutId = -1
+    this.isRegistering = false
+    this.isShowProgress = false
   }
 
   build() {
@@ -92,7 +118,7 @@ struct RegisterPage {
         })
 
       // 注册标题
-      Text("注册界面")
+      Text("注册账号")
         .fontSize(26)
         .fontWeight(FontWeight.Medium)
         .fontColor("#182431")
@@ -109,8 +135,13 @@ struct RegisterPage {
       // 表单卡片容器
       Column() {
         // 账号输入区域
+        Text('账号')
+          .fontSize(14)
+          .fontColor('#586670')
+          .width('100%')
+          .textAlign(TextAlign.Start)
         TextInput({
-          placeholder: '请输入账号',
+          placeholder: '请输入手机号或用户名',
           text: this.account
         })
           .maxLength(20)
@@ -121,6 +152,14 @@ struct RegisterPage {
           })
 
         // 密码输入区域
+        Text('密码')
+          .fontSize(14)
+          .fontColor('#5B6670')
+          .width('100%')
+          .textAlign(TextAlign.Start)
+          .margin({
+            top: 12
+          })
         TextInput({
           placeholder: '请输入密码',
           text: this.password
@@ -134,8 +173,16 @@ struct RegisterPage {
           })
 
         // 确认密码输入区域
+        Text('确认密码')
+          .fontSize(14)
+          .fontColor('#5B6670')
+          .width('100%')
+          .textAlign(TextAlign.Start)
+          .margin({
+            top: 12
+          })
         TextInput({
-          placeholder: '确认密码',
+          placeholder: '请再次输入密码',
           text: this.confirmPassword
         })
           .type(InputType.Password)
@@ -178,6 +225,17 @@ struct RegisterPage {
             })
         }
 
+        // 注册成功提示
+        if (this.registerSuccess) {
+          Text('注册成功！正在跳转到登录页面...')
+            .fontSize(14)
+            .fontColor('#07C160')
+            .fontWeight(FontWeight.Medium)
+            .margin({
+              top: 16
+            })
+        }
+
       }
       .width('100%')
       .borderRadius(20)
@@ -193,7 +251,7 @@ struct RegisterPage {
       .backgroundColor(Color.White)
 
       // 返回登录入口
-      Text('已有账号，返回登陆')
+      Text('已有账号？返回登录')
         .fontSize(14)
         .fontColor('#3E8AD9')
         .fontWeight(FontWeight.Medium)
@@ -203,6 +261,17 @@ struct RegisterPage {
         .onClick(() => {
           router.back()
         })
+
+      // 自定义Toast提示
+      if (this.showToast) {
+        Text(this.toastMessage)
+          .fontSize(14)
+          .fontColor(Color.White)
+          .backgroundColor('#182431')
+          .padding(10)
+          .borderRadius(8)
+          .margin({ top: 20 })
+      }
 
     }
     .width('100%')

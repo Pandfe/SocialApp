@@ -42,12 +42,15 @@ struct LoginPage {
   @State isShowProgress: boolean = false
   // 定时器ID
   private timeOutId: number = -1
-  // 是否为注册状态
-  @State isRegister: boolean = false
-  // 预设账号
+  // 预设账号 - 会被注册页面传递的参数更新
   @State paccount: string = '13712345678'
-  // 预设密码
+  // 预设密码 - 会被注册页面传递的参数更新
   @State ppassword: string = '123456'
+  // 防止重复点击
+  @State isLogging: boolean = false
+  // Toast 消息
+  @State toastMessage: string = ''
+  @State showToast: boolean = false
 
   // 构建图标按钮
   @Builder imageButton(src: Resource) {
@@ -62,26 +65,37 @@ struct LoginPage {
     .backgroundColor("#00ffffff")
   }
 
+  // 显示Toast方法
+  private showToastMessage(message: string): void {
+    this.toastMessage = message
+    this.showToast = true
+    // 2秒后自动隐藏
+    setTimeout(() => {
+      this.showToast = false
+    }, 2000)
+  }
+
   // 登录方法
   login(): void {
+    if (this.isLogging) return;
+
     if (this.account === '' || this.password === '') {
       // 输入为空时提示
-      promptAction.showToast({
-        message: '输入不能为空'
-      })
+      this.showToastMessage('输入不能为空')
     } else {
       // 验证账号密码
       if ((this.account != this.paccount) || (this.password != this.ppassword)) {
-        promptAction.showToast({
-          message: '用户名或密码不正确，请重新核对后输入'
-        })
+        this.showToastMessage('用户名或密码不正确，请重新核对后输入')
       } else {
         // 显示加载进度
         this.isShowProgress = true
+        this.isLogging = true
+
         if (this.timeOutId == -1) {
           // 设置定时器，模拟登录过程
           this.timeOutId = setTimeout(() => {
             this.isShowProgress = false
+            this.isLogging = false
             this.timeOutId = -1
 
             // 跳转到主页，并传递账号信息
@@ -101,21 +115,23 @@ struct LoginPage {
   aboutToDisappear(): void {
     clearTimeout(this.timeOutId)
     this.timeOutId = -1
+    this.isLogging = false
+    this.isShowProgress = false
   }
 
   // 页面显示时获取路由参数
   onPageShow(): void {
     const params = router.getParams() as Record<string, string>
     if (params) {
-      // 如果有账号参数，设置账号
+      // 如果有账号参数，设置账号和预设账号
       if (typeof params.account === 'string' && params.account.length > 0) {
         this.account = params.account
-        this.paccount = params.account
+        this.paccount = params.account  // 更新预设账号
       }
-      // 如果有密码参数，则设置密码
+      // 如果有密码参数，则设置密码和预设密码
       if (typeof params.password === 'string' && params.password.length > 0) {
         this.password = params.password
-        this.ppassword = params.password
+        this.ppassword = params.password  // 更新预设密码
       }
     }
   }
@@ -191,17 +207,13 @@ struct LoginPage {
           Text('短信验证码登录')
             .blueTextStyle()
             .onClick(() => {
-              promptAction.showToast({
-                message: '暂未开通短信登录'
-              })
+              this.showToastMessage('暂未开通短信登录')
             })
 
           Text('忘记密码')
             .blueTextStyle()
             .onClick(() => {
-              promptAction.showToast({
-                message: '请联系管理员重置密码'
-              })
+              this.showToastMessage('请联系管理员重置密码')
             })
         }
         .width('100%')
@@ -284,6 +296,17 @@ struct LoginPage {
         this.imageButton($r('app.media.WeiXin'))
         this.imageButton($r('app.media.Phone'))
         this.imageButton($r('app.media.QQ'))
+      }
+
+      // 自定义Toast提示
+      if (this.showToast) {
+        Text(this.toastMessage)
+          .fontSize(14)
+          .fontColor(Color.White)
+          .backgroundColor('#182431')
+          .padding(10)
+          .borderRadius(8)
+          .margin({ top: 20 })
       }
 
     }
